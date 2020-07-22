@@ -1,9 +1,9 @@
 package com.ali.trace.spy.intercepter;
 
+import java.util.Stack;
+
 import com.ali.trace.spy.core.NodePool;
 import com.ali.trace.spy.util.TreeNode;
-
-import java.util.Stack;
 
 /**
  * @author nkhanlang@163.com
@@ -30,7 +30,8 @@ public class ThreadCompressIntercepter extends BaseIntercepter {
         return m;
     }
 
-    public void start(String c, String m) {
+    @Override
+	public void start(String c, String m) {
         Stack<TreeNode> stack = t_stack.get();
         Stack<Long> time = t_time.get();
         if (c.equalsIgnoreCase(this.c) && m.equalsIgnoreCase(this.m)) {
@@ -43,7 +44,7 @@ public class ThreadCompressIntercepter extends BaseIntercepter {
                 t_time.set(time = new Stack<Long>());
             }
         }
-        if (stack != null && !stack.isEmpty()) {
+        if ((stack != null) && !stack.isEmpty()) {
             if (!time.isEmpty()) {
                 stack.push(stack.peek().addSon(TreeNode.getId(c, m), 1L));
             }
@@ -51,18 +52,19 @@ public class ThreadCompressIntercepter extends BaseIntercepter {
         }
     }
 
-    public void end(String c, String m) {
+    @Override
+	public void end(String c, String m) {
         Stack<TreeNode> stack = t_stack.get();
         Stack<Long> time = t_time.get();
         TreeNode node = null;
-        if (stack != null && !stack.isEmpty()) {
+        if ((stack != null) && !stack.isEmpty()) {
             node = stack.pop();
             node.addRt(System.currentTimeMillis() - time.pop());
             if (!node.equal(c, m)) {
                 System.err.println("not equal : " + c + "," + m + ":" + node.getName());
             }
         }
-        if (stack != null && stack.isEmpty()) {
+        if ((stack != null) && stack.isEmpty()) {
             t_stack.set(null);
             t_time.set(null);
         }

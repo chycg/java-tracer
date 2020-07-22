@@ -11,7 +11,6 @@ public class ThreadFileNameGenerator implements IFileNameGenerator {
 		this.path = path;
 	}
 
-	@Override
 	public String getName() {
 		Thread thread = Thread.currentThread();
 		StackTraceElement[] traces = thread.getStackTrace();

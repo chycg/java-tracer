@@ -21,127 +21,115 @@ import java.util.jar.JarInputStream;
  */
 public class SpyClassLoader extends ClassLoader {
 
-    private Map<String, byte[]> bytesMap = new HashMap<String, byte[]>();
+	private Map<String, byte[]> bytesMap = new HashMap<String, byte[]>();
 
-    /**
-     * with parent
-     */
-    public SpyClassLoader(ClassLoader parent) {
-        super(parent);
-    }
+	public SpyClassLoader(ClassLoader parent) {
+		super(parent);
+	}
 
-    /**
-     * load input stream
-     */
-    public void load(InputStream in) {
-        JarInputStream jarInput = null;
-        try {
-            jarInput = new JarInputStream(in);
-            JarEntry entry = null;
-            while ((entry = jarInput.getNextJarEntry()) != null) {
-                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-                int len = 0;
-                byte[] data = new byte[256];
-                while ((len = jarInput.read(data)) != -1) {
-                    bytes.write(data, 0, len);
-                }
-                //System.out.println("file : " + entry.getName());
-                bytesMap.put(entry.getName(), bytes.toByteArray());
-            }
-        } catch (Throwable e) {
-            e.printStackTrace();
-        } finally {
-            if (jarInput != null) {
-                try {
-                    jarInput.close();
-                } catch (IOException e1) {
-                    e1.printStackTrace();
-                }
-            }
-        }
-    }
+	public void load(InputStream in) {
+		try (JarInputStream jarInput = new JarInputStream(in);) {
+			JarEntry entry = null;
+			while ((entry = jarInput.getNextJarEntry()) != null) {
+				ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+				int len = 0;
+				byte[] data = new byte[256];
+				while ((len = jarInput.read(data)) != -1) {
+					bytes.write(data, 0, len);
+				}
+				bytesMap.put(entry.getName(), bytes.toByteArray());
+			}
+		} catch (Throwable e) {
+			e.printStackTrace();
+		}
+	}
 
-    /**
-     * load by self first
-     */
-    protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        Class<?> clazz = null;
-        try {
-            clazz = findClass(name);
-        } catch (ClassNotFoundException e) {
-        }
-        if (clazz == null) {
-            clazz = super.loadClass(name, resolve);
-        }
-        return clazz;
-    }
+	/**
+	 * load by self first
+	 */
+	@Override
+	protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+		Class<?> clazz = null;
+		try {
+			clazz = findClass(name);
+		} catch (ClassNotFoundException e) {
+		}
 
-    /**
-     * define from bytes loaded
-     */
-    protected Class<?> findClass(String name) throws ClassNotFoundException {
-        Class<?> clazz = this.findLoadedClass(name);
-        if (clazz == null && name != null) {
-            String fileName = name.replace(".", "/") + ".class";
-            byte[] bytes = bytesMap.get(fileName);
-            if (bytes == null) {
-                throw new ClassNotFoundException("class not found : " + name);
-            }
-            clazz = this.defineClass(name, bytes, 0, bytes.length);
-        }
-        return clazz;
-    }
+		if (clazz == null) {
+			clazz = super.loadClass(name, resolve);
+		}
+		return clazz;
+	}
 
-    @Override
-    protected URL findResource(String paramString) {
-        byte[] extractedBytes = bytesMap.get(paramString);
-        if (extractedBytes != null) {
-            try {
-                return new URL(null, "bytes:///" + paramString, new Handler(extractedBytes));
-            } catch (MalformedURLException e) {
-            }
-        }
-        return null;
-    }
+	/**
+	 * define from bytes loaded
+	 */
+	@Override
+	protected Class<?> findClass(String name) throws ClassNotFoundException {
+		Class<?> clazz = this.findLoadedClass(name);
+		if ((clazz == null) && (name != null)) {
+			String fileName = name.replace(".", "/") + ".class";
+			byte[] bytes = bytesMap.get(fileName);
+			if (bytes == null) {
+				throw new ClassNotFoundException("class not found : " + name);
+			}
+			clazz = this.defineClass(name, bytes, 0, bytes.length);
+		}
+		return clazz;
+	}
 
-    public URL getResource(String name) {
-        URL url = findResource(name);
-        if (url == null) {
-            url = super.getResource(name);
-        }
-        return url;
-    }
+	@Override
+	protected URL findResource(String paramString) {
+		byte[] extractedBytes = bytesMap.get(paramString);
+		if (extractedBytes != null) {
+			try {
+				return new URL(null, "bytes:///" + paramString, new Handler(extractedBytes));
+			} catch (MalformedURLException e) {
+			}
+		}
+		return null;
+	}
 
-    /**
-     * self define handler to make byte array into URL
-     */
-    class Handler extends URLStreamHandler {
-        private final byte[] bytes;
+	@Override
+	public URL getResource(String name) {
+		URL url = findResource(name);
+		if (url == null) {
+			url = super.getResource(name);
+		}
+		return url;
+	}
 
-        public Handler(byte[] bytes) {
-            this.bytes = bytes;
-        }
+	/**
+	 * self define handler to make byte array into URL
+	 */
+	class Handler extends URLStreamHandler {
+		private final byte[] bytes;
 
-        @Override
-        protected URLConnection openConnection(URL paramURL) throws IOException {
-            return new ByteURLConnection(paramURL);
-        }
+		public Handler(byte[] bytes) {
+			this.bytes = bytes;
+		}
 
-        /**
-         * self defined URL connection
-         */
-        class ByteURLConnection extends URLConnection {
-            public ByteURLConnection(URL paramURL) {
-                super(paramURL);
-            }
+		@Override
+		protected URLConnection openConnection(URL paramURL) throws IOException {
+			return new ByteURLConnection(paramURL);
+		}
 
-            @Override
-            public InputStream getInputStream() throws IOException {
-                return new ByteArrayInputStream(bytes);
-            }
+		/**
+		 * self defined URL connection
+		 */
+		class ByteURLConnection extends URLConnection {
+			public ByteURLConnection(URL paramURL) {
+				super(paramURL);
+			}
 
-            @Override
-            public void connect() throws IOException {}
-        }
-    }
+			@Override
+			public InputStream getInputStream() throws IOException {
+				return new ByteArrayInputStream(bytes);
+			}
+
+			@Override
+			public void connect() throws IOException {
+			}
+		}
+	}
 }

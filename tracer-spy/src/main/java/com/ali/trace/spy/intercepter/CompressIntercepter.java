@@ -18,6 +18,7 @@ import com.ali.trace.spy.util.NameUtils;
  *
  */
 public class CompressIntercepter extends BaseIntercepter {
+
 	private final ThreadLocal<Integer> t_depth = new ThreadLocal<Integer>();
 	private final ThreadLocal<Integer> t_seq = new ThreadLocal<Integer>();
 	private final ThreadLocal<Map<String, Node>> t_map = new ThreadLocal<Map<String, Node>>();
@@ -28,6 +29,7 @@ public class CompressIntercepter extends BaseIntercepter {
 		super(path);
 	}
 
+	@Override
 	public final void start(String c, String m) throws Exception {
 		if (t_seq.get() == null) {
 			t_seq.set(0);
@@ -43,15 +45,15 @@ public class CompressIntercepter extends BaseIntercepter {
 			t_root.set(node);
 		} else {
 			Node preNode = t_stack.get().peek();
-			if (preNode.depth == depth - 1) {
+			if (preNode.depth == (depth - 1)) {
 				preNode.sons.add(node);
 				node.parent = preNode;
 				t_stack.get().push(node);
-			} else if (preNode.depth > depth - 1) {
+			} else if (preNode.depth > (depth - 1)) {
 				do {
 					preNode = t_stack.get().pop();
 					preNode.format();
-					if (preNode.parent != null && preNode.parent.isRef == 1) {
+					if ((preNode.parent != null) && (preNode.parent.isRef == 1)) {
 						write(t_root.get().printPre().append(preNode.printSur()).toString());
 						preNode.sons.clear();
 					}
@@ -66,13 +68,14 @@ public class CompressIntercepter extends BaseIntercepter {
 		}
 	}
 
+	@Override
 	public final void end(String c, String m) throws Exception {
 		t_depth.set(t_depth.get() - 1);
 		if (t_depth.get() == 0) {
 			while (!t_stack.get().isEmpty()) {
 				Node preNode = t_stack.get().pop();
 				preNode.format();
-				if (preNode.parent != null && preNode.parent.isRef == 1) {
+				if ((preNode.parent != null) && (preNode.parent.isRef == 1)) {
 					write(t_root.get().printPre().append(preNode.printSur()).toString());
 					preNode.sons.clear();
 				}
@@ -135,7 +138,7 @@ public class CompressIntercepter extends BaseIntercepter {
 		public void setRef(int isRef) {
 			if (this.isRef == 0) {
 				this.isRef = isRef;
-				if (isRef == 1 && parent != null) {
+				if ((isRef == 1) && (parent != null)) {
 					parent.setRef(isRef);
 				}
 			}

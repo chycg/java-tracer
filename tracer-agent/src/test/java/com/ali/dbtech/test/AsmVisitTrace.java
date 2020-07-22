@@ -13,12 +13,8 @@ import org.objectweb.asm.Opcodes;
 public class AsmVisitTrace {
 
     public static void main(String[] args) throws FileNotFoundException, IOException {
-//
-//        String name = Test.class.getName();
-//        new Test();
         Scanner scanner = new Scanner(System.in);
         String line = null;
-        //test(name);
         while((line = scanner.nextLine()) != null && !"q".equalsIgnoreCase(line)){
             System.out.println("print line : " + line);
             test(line);

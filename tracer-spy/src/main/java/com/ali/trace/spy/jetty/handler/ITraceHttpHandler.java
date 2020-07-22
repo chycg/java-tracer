@@ -33,9 +33,12 @@ public interface ITraceHttpHandler {
     @Retention(RetentionPolicy.RUNTIME)
     @Documented
     public @interface TraceView {
+
     }
 
     public class ModelMap extends HashMap<String, Object>{
+
+		private static final long serialVersionUID = -7495222750472825696L;
 
     }
 }
